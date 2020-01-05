@@ -6,6 +6,7 @@ namespace Sparebeat
     static class AppEnvironment
     {
         const string songsDir = "Songs";
+        const string cacheDir = "Cache";
 
 #if DEBUG
         private static readonly string _storage = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\Sparebeat(Development)";
@@ -29,6 +30,19 @@ namespace Sparebeat
             get
             {
                 var combine = Path.Combine(Storage, songsDir);
+
+                if (!Directory.Exists(combine))
+                    Directory.CreateDirectory(combine);
+
+                return combine;
+            }
+        }
+
+        public static string Cache
+        {
+            get
+            {
+                var combine = Path.Combine(Storage, cacheDir);
 
                 if (!Directory.Exists(combine))
                     Directory.CreateDirectory(combine);

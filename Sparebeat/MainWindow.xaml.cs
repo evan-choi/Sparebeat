@@ -5,17 +5,23 @@ namespace Sparebeat
 {
     public partial class MainWindow : Window
     {
+        private SparebeatBrowser _sparebeat;
         public MainWindow()
         {
             InitializeComponent();
 
-            var sparebeatBrowser = new SparebeatBrowser(browser);
-            sparebeatBrowser.PageLoaded += Browser_PageLoaded;
+            _sparebeat = new SparebeatBrowser(browser);
+            _sparebeat.Loadded += Browser_Loadded;
         }
 
-        private void Browser_PageLoaded(object sender, System.EventArgs e)
+        private async void Browser_Loadded(object sender, System.EventArgs e)
         {
             root.Children.Remove(imgLogo);
+
+            var client = new SparebeatClient(AppEnvironment.Songs);
+            var map = await client.GetBeatmap("rokuchonen");
+
+            await _sparebeat.Load(map);
         }
     }
 }

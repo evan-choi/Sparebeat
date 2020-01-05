@@ -34,8 +34,11 @@ namespace Sparebeat
                 ResourcesDirPath = resourceDirPath,
                 BrowserSubprocessPath = Path.Combine(resourceDirPath, "CefSharp.BrowserSubprocess.exe"),
                 LocalesDirPath = Path.Combine(resourceDirPath, "locales"),
-                CachePath = @"Cache",
-                CefCommandLineArgs = { { "enable-media-stream", "1" } }
+                CachePath = AppEnvironment.Cache,
+                CefCommandLineArgs = { { "enable-media-stream", "1" } },
+#if RELEASE
+                LogSeverity = LogSeverity.Disable
+#endif
             };
 
             settings.RegisterScheme(new CefCustomScheme
