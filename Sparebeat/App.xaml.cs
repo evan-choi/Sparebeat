@@ -1,8 +1,10 @@
 ﻿using CefSharp;
 using CefSharp.Wpf;
+using Sparebeat.Handler;
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace Sparebeat
@@ -32,9 +34,15 @@ namespace Sparebeat
                 ResourcesDirPath = resourceDirPath,
                 BrowserSubprocessPath = Path.Combine(resourceDirPath, "CefSharp.BrowserSubprocess.exe"),
                 LocalesDirPath = Path.Combine(resourceDirPath, "locales"),
-                CachePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), @"Sparebeat\Cache"),
+                CachePath = @"Cache",
                 CefCommandLineArgs = { { "enable-media-stream", "1" } }
             };
+
+            settings.RegisterScheme(new CefCustomScheme
+            {
+                SchemeName = "app",
+                SchemeHandlerFactory = new AppSchemeHandlerFactory()
+            });
 
             Cef.Initialize(settings, false, browserProcessHandler: null);
         }

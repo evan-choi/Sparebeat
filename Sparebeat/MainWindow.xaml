@@ -10,7 +10,19 @@
     SizeToContent="WidthAndHeight"
     WindowStartupLocation="CenterScreen"
     mc:Ignorable="d">
-    <Grid Width="960" Height="640">
-        <cef:ChromiumWebBrowser x:Name="browser" Address="https://www.google.com" />
+    <Grid
+        x:Name="root"
+        Width="960"
+        Height="640"
+        Background="#222">
+        <Image
+            x:Name="imgLogo"
+            Width="128"
+            Height="128"
+            Margin="0,200,0,0"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Source="/Resources/Images/logo.png" />
+        <cef:ChromiumWebBrowser x:Name="browser" Address="app://main.html" />
     </Grid>
 </Window>

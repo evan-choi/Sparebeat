@@ -25,4 +25,14 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Resources\App\**\*" />
+    <EmbeddedResource Include="Resources\App\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Resources\Images\**\*" />
+    <Resource Include="Resources\Images\**\*" />
+  </ItemGroup>
+
 </Project>

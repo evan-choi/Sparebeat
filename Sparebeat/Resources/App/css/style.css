@@ -1,0 +1,12 @@
+﻿body {
+    margin: 0;
+    padding: 0;
+}
+
+.client-box {
+    width: 960px;
+    height: 640px;
+    border: 0;
+    position: absolute;
+    transform-origin: 0 0;
+}
