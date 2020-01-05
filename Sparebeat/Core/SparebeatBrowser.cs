@@ -1,5 +1,6 @@
 ﻿using CefSharp;
 using Sparebeat.Common;
+using Sparebeat.Json;
 using Sparebeat.Utilities;
 using System;
 using System.Text.Json;
@@ -17,6 +18,8 @@ namespace Sparebeat.Core
 
         private readonly JsonSerializerOptions _serializerOptions;
 
+        public bool IsLoaded => !_browser.IsLoading;
+
         public SparebeatBrowser(IWebBrowser webBrowser)
         {
             _snapshot = this.Snapshot();
@@ -27,7 +30,11 @@ namespace Sparebeat.Core
             _serializerOptions = new JsonSerializerOptions
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                Converters =
+                {
+                    new INoteConverter()
+                }
             };
         }
 

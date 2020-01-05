@@ -1,36 +1,28 @@
 ﻿using CefSharp;
 using CefSharp.WinForms;
 using Sparebeat.Handler;
-using Sparebeat.Windows;
-using System;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Windows.Forms;
+using System.Windows;
 
 namespace Sparebeat
 {
-    static class Program
+    public partial class App : Application
     {
-        public static string Name => "Sparebeat";
+        public static readonly string Name = "Sparebeat";
 
-        [STAThread]
-        static void Main()
+        public App()
         {
             string cefResourcePath = Path.Combine(Directory.GetCurrentDirectory(), @"resources\cefsharp");
             string libcef = Path.Combine(cefResourcePath, "libcef.dll");
 
             if (new CefLibraryHandle(libcef).IsInvalid)
             {
-                MessageBox.Show("CefSharp initialize failed", "Sparebeat", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("CefSharp initialize failed", "Sparebeat", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             InitializeCefSharp(cefResourcePath);
-
-            Application.SetHighDpiMode(HighDpiMode.SystemAware);
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new GameWindow());
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

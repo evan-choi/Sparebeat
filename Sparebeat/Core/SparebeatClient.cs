@@ -1,5 +1,6 @@
 ﻿using HtmlAgilityPack;
 using Sparebeat.Common;
+using Sparebeat.Json;
 using Sparebeat.Utilities;
 using System;
 using System.Collections.Generic;
@@ -38,7 +39,11 @@ namespace Sparebeat.Core
             _serializerOptions = new JsonSerializerOptions
             {
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                Converters =
+                {
+                    new INoteConverter()
+                }
             };
         }
 
@@ -55,10 +60,10 @@ namespace Sparebeat.Core
             foreach (var item in items)
             {
                 var id = item.GetAttributeValue("id", null);
-                var title = item.SelectSingleNode("//div[contains(@class, 'music-list-item-title')]").InnerText.Normalize();
-                var artist = item.SelectSingleNode("//div[contains(@class, 'music-list-item-artist')]").InnerText.Normalize();
-                var levelText = item.SelectSingleNode("//div[contains(@class, 'music-list-item-sub')]").InnerText.Normalize();
-                var scoreText = item.SelectSingleNode("//div[contains(@class, 'music-list-item-score')]").InnerText.Normalize();
+                var title = item.SelectSingleNode("div/div[contains(@class, 'music-list-item-title')]").InnerText.Normalize();
+                var artist = item.SelectSingleNode("div/div[contains(@class, 'music-list-item-artist')]").InnerText.Normalize();
+                var levelText = item.SelectSingleNode("div[contains(@class, 'music-list-item-sub')]").InnerText.Normalize();
+                var scoreText = item.SelectSingleNode("div[contains(@class, 'music-list-item-score')]").InnerText.Normalize();
 
                 var levels = Regex.Matches(levelText, @"\d+")
                     .Cast<Match>()
@@ -70,7 +75,7 @@ namespace Sparebeat.Core
                     Id = id,
                     Title = title,
                     Artist= artist,
-                    Level = new BeatmapLevel
+                    Level = new BeatmapLevelSet
                     {
                         Easy = levels[0],
                         Normal = levels[1],

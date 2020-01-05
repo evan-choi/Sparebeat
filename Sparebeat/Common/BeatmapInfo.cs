@@ -8,7 +8,7 @@
 
         public string Artist { get; set; }
 
-        public BeatmapLevel Level { get; set; }
+        public BeatmapLevelSet Level { get; set; }
 
         public int Score { get; set; }
     }
