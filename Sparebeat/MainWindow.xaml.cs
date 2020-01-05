@@ -19,6 +19,8 @@ namespace Sparebeat
             root.Children.Remove(imgLogo);
 
             var client = new SparebeatClient(AppEnvironment.Songs);
+            var infos = await client.GetBeatmapInfos();
+
             var map = await client.GetBeatmap("rokuchonen");
 
             await _sparebeat.Load(map);

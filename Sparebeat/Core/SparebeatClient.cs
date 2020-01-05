@@ -1,10 +1,14 @@
-﻿using Sparebeat.Common;
+﻿using HtmlAgilityPack;
+using Sparebeat.Common;
 using Sparebeat.Utilities;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Sparebeat.Core
@@ -36,6 +40,47 @@ namespace Sparebeat.Core
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
+        }
+
+        public async Task<BeatmapInfo[]> GetBeatmapInfos()
+        {
+            var result = new List<BeatmapInfo>();
+
+            var htmlStream = await GetAsync<Stream>("/");
+            var document = new HtmlDocument();
+            document.Load(htmlStream);
+
+            var items = document.DocumentNode.SelectNodes("//li[contains(@class, 'music-list-item')]");
+
+            foreach (var item in items)
+            {
+                var id = item.GetAttributeValue("id", null);
+                var title = item.SelectSingleNode("//div[contains(@class, 'music-list-item-title')]").InnerText.Normalize();
+                var artist = item.SelectSingleNode("//div[contains(@class, 'music-list-item-artist')]").InnerText.Normalize();
+                var levelText = item.SelectSingleNode("//div[contains(@class, 'music-list-item-sub')]").InnerText.Normalize();
+                var scoreText = item.SelectSingleNode("//div[contains(@class, 'music-list-item-score')]").InnerText.Normalize();
+
+                var levels = Regex.Matches(levelText, @"\d+")
+                    .Cast<Match>()
+                    .Select(m => int.Parse(m.Value))
+                    .ToArray();
+
+                result.Add(new BeatmapInfo
+                {
+                    Id = id,
+                    Title = title,
+                    Artist= artist,
+                    Level = new BeatmapLevel
+                    {
+                        Easy = levels[0],
+                        Normal = levels[1],
+                        Hard = levels[2]
+                    },
+                    Score = int.Parse(scoreText)
+                });
+            }
+
+            return result.ToArray();
         }
 
         public async Task<Beatmap> GetBeatmap(string id)
@@ -114,15 +159,29 @@ namespace Sparebeat.Core
             if (!response.IsSuccessStatusCode)
                 return default;
 
-            if (typeof(T) == typeof(byte[]))
+            object result;
+
+            switch (typeof(T))
             {
-                return (T)(object)await response.Content.ReadAsByteArrayAsync();
+                case var t when t == typeof(byte[]):
+                    result = await response.Content.ReadAsByteArrayAsync();
+                    break;
+
+                case var t when t == typeof(Stream):
+                    result = new MemoryStream(await response.Content.ReadAsByteArrayAsync());
+                    break;
+
+                case var t when t == typeof(string):
+                    result = await response.Content.ReadAsStringAsync();
+                    break;
+
+                default:
+                    string json = await response.Content.ReadAsStringAsync();
+                    result = JsonSerializer.Deserialize<T>(json, _serializerOptions);
+                    break;
             }
-            else
-            {
-                string json = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<T>(json, _serializerOptions);
-            }
+
+            return (T)result;
         }
     }
 }
