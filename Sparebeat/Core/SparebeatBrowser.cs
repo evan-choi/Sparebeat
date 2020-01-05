@@ -10,6 +10,7 @@ namespace Sparebeat.Core
     class SparebeatBrowser
     {
         public event EventHandler Loadded;
+        public event EventHandler<Beatmap> BeatmapChanged;
 
         private IWebBrowser _browser;
         private ContextUtility.ContextSnapshot _snapshot;
@@ -54,6 +55,9 @@ namespace Sparebeat.Core
 
             string script = $"Sparebeat.load({mapJson}, '{musicBin}')";
             var response = await _browser.EvaluateScriptAsync(script);
+
+            if (response.Success)
+                _snapshot.BeginInvokeEvent(BeatmapChanged, this, beatmap);
 
             return response.Success;
         }

@@ -1,16 +1,16 @@
 ﻿using CefSharp;
 using CefSharp.Wpf;
 using Sparebeat.Handler;
-using System;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Windows;
 
 namespace Sparebeat
 {
     public partial class App : Application
     {
+        public static string Name => "Sparebeat";
+
         public App()
         {
             string cefResourcePath = Path.Combine(Directory.GetCurrentDirectory(), @"resources\cefsharp");

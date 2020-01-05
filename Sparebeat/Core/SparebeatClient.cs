@@ -83,17 +83,17 @@ namespace Sparebeat.Core
             return result.ToArray();
         }
 
-        public async Task<Beatmap> GetBeatmap(string id)
+        public async Task<Beatmap> GetBeatmap(BeatmapInfo info)
         {
             Beatmap beatmap = null;
             bool useCache = !string.IsNullOrEmpty(CacheDirectory);
 
             if (useCache)
-                beatmap = GetBeatmapFromCache(id);
+                beatmap = GetBeatmapFromCache(info);
 
             if (beatmap == null)
             {
-                beatmap = await GetBeatmapFromHttp(id);
+                beatmap = await GetBeatmapFromHttp(info);
 
                 if (useCache && beatmap != null)
                     WriteBeatmapCache(beatmap);
@@ -102,10 +102,10 @@ namespace Sparebeat.Core
             return beatmap;
         }
 
-        private async Task<Beatmap> GetBeatmapFromHttp(string id)
+        private async Task<Beatmap> GetBeatmapFromHttp(BeatmapInfo info)
         {
-            var mapTask = GetAsync<BeatmapMetadata>($"/play/{id}/map");
-            var musicTask = GetAsync<byte[]>($"/play/{id}/music");
+            var mapTask = GetAsync<BeatmapMetadata>($"/play/{info.Id}/map");
+            var musicTask = GetAsync<byte[]>($"/play/{info.Id}/music");
 
             await Task.WhenAll(mapTask, musicTask);
 
@@ -119,10 +119,10 @@ namespace Sparebeat.Core
             };
         }
 
-        private Beatmap GetBeatmapFromCache(string id)
+        private Beatmap GetBeatmapFromCache(BeatmapInfo info)
         {
-            var mapFile = Path.Combine(CacheDirectory, id, map);
-            var musicFile = Path.Combine(CacheDirectory, id, music);
+            var mapFile = Path.Combine(CacheDirectory, info.Id, map);
+            var musicFile = Path.Combine(CacheDirectory, info.Id, music);
 
             if (!File.Exists(mapFile) || !File.Exists(musicFile))
                 return null;
