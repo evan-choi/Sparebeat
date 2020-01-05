@@ -29,10 +29,12 @@ namespace Sparebeat.Core
 
             _serializerOptions = new JsonSerializerOptions
             {
+                IgnoreNullValues = true,
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 Converters =
                 {
+                    new Int32Converter(),
                     new INoteConverter()
                 }
             };
@@ -42,6 +44,10 @@ namespace Sparebeat.Core
         {
             if (e.Browser.IsLoading)
                 return;
+
+#if DEBUG
+            _browser.ShowDevTools();
+#endif
 
             _browser.LoadingStateChanged -= LoadingStateChanged;
             OnPageLoadded();

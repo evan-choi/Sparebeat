@@ -38,10 +38,12 @@ namespace Sparebeat.Core
 
             _serializerOptions = new JsonSerializerOptions
             {
+                IgnoreNullValues = true,
                 DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                 Converters =
                 {
+                    new Int32Converter(),
                     new INoteConverter()
                 }
             };

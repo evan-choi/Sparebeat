@@ -7,11 +7,11 @@ using System.Windows.Input;
 
 namespace Sparebeat.Windows
 {
-    public partial class TestWindow : Window
+    public partial class MainWindow : Window
     {
         private SparebeatClient _client;
 
-        public TestWindow()
+        public MainWindow()
         {
             InitializeComponent();
             
@@ -40,10 +40,11 @@ namespace Sparebeat.Windows
             gameWindow.FormClosed += (s, e) => Show();
             Hide();
 
-            System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.SystemAware);
-            System.Windows.Forms.Application.EnableVisualStyles();
-            System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
-            System.Windows.Forms.Application.Run(gameWindow);
+            gameWindow.Show();
+            //System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.SystemAware);
+            //System.Windows.Forms.Application.EnableVisualStyles();
+            //System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+            //System.Windows.Forms.Application.Run(gameWindow);
         }
     }
 }

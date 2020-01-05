@@ -1,4 +1,5 @@
-﻿using Sparebeat.Common;
+﻿using CefSharp;
+using Sparebeat.Common;
 using Sparebeat.Core;
 using System;
 using System.Windows.Forms;
@@ -27,6 +28,12 @@ namespace Sparebeat.Windows
             _browser.Dock = DockStyle.Fill;
 
             await _sparebeat.Load(_beatmap);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _browser.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

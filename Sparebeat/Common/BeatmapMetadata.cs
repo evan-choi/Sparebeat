@@ -8,11 +8,15 @@
 
         public string Artist { get; set; }
 
+        public string Url { get; set; }
+
         public int Bpm { get; set; }
 
         public int StartTime { get; set; }
 
         public BeatmapLevelSet Level { get; set; }
+
+        public string[] BgColor { get; set; }
 
         public NoteSet Map { get; set; } 
     }

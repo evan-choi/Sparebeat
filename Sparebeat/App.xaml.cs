@@ -26,7 +26,7 @@ namespace Sparebeat
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void InitializeCefSharp(string resourceDirPath)
+        private void InitializeCefSharp(string resourceDirPath)
         {
             var settings = new CefSettings()
             {
@@ -39,13 +39,14 @@ namespace Sparebeat
                 LogSeverity = LogSeverity.Disable
 #endif
             };
-
+            
             settings.RegisterScheme(new CefCustomScheme
             {
                 SchemeName = "app",
                 SchemeHandlerFactory = new AppSchemeHandlerFactory()
             });
 
+            Cef.EnableHighDPISupport();
             Cef.Initialize(settings, false, browserProcessHandler: null);
         }
     }
