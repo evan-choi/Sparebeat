@@ -1,16 +1,15 @@
-﻿namespace Sparebeat.Common
+﻿namespace Sparebeat.Common;
+
+public class BeatmapLevelSet
 {
-    class BeatmapLevelSet
+    public int Easy { get; set; }
+
+    public int Normal { get; set; }
+
+    public int Hard { get; set; }
+
+    public override string ToString()
     {
-        public int Easy { get; set; }
-
-        public int Normal { get; set; }
-
-        public int Hard { get; set; }
-
-        public override string ToString()
-        {
-            return $"{Easy} / {Normal} / {Hard}";
-        }
+        return $"{Easy} / {Normal} / {Hard}";
     }
 }

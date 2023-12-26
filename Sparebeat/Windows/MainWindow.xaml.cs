@@ -1,50 +1,44 @@
 ﻿using Sparebeat.Common;
 using Sparebeat.Core;
-using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace Sparebeat.Windows
+namespace Sparebeat.Windows;
+
+public partial class MainWindow
 {
-    public partial class MainWindow : Window
+    private readonly SparebeatClient _client;
+
+    public MainWindow()
     {
-        private SparebeatClient _client;
+        InitializeComponent();
 
-        public MainWindow()
+        _client = new SparebeatClient(AppEnvironment.Songs);
+        Loaded += TestWindow_Loaded;
+    }
+
+    private async void TestWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        lvBeatmap.ItemsSource = await _client.GetBeatmapInfos();
+    }
+
+    private void BeatmapInfo_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is ListViewItem { DataContext: BeatmapInfo info })
         {
-            InitializeComponent();
-            
-            _client = new SparebeatClient(AppEnvironment.Songs);
-            Loaded += TestWindow_Loaded;
+            Start(info);
         }
+    }
 
-        private async void TestWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            lvBeatmap.ItemsSource = await _client.GetBeatmapInfos();
-        }
+    private async void Start(BeatmapInfo beatmapInfo)
+    {
+        var beatmap = await _client.GetBeatmap(beatmapInfo);
+        var gameWindow = new GameWindow(beatmapInfo, beatmap);
 
-        private void BeatmapInfo_Click(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is ListViewItem item && item.DataContext is BeatmapInfo info)
-            {
-                Start(info);
-            }
-        }
+        gameWindow.FormClosed += delegate { Show(); };
+        Hide();
 
-        private async void Start(BeatmapInfo beatmapInfo)
-        {
-            var beatmap = await _client.GetBeatmap(beatmapInfo);
-            var gameWindow = new GameWindow(beatmap);
-
-            gameWindow.FormClosed += (s, e) => Show();
-            Hide();
-
-            gameWindow.Show();
-            //System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.SystemAware);
-            //System.Windows.Forms.Application.EnableVisualStyles();
-            //System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
-            //System.Windows.Forms.Application.Run(gameWindow);
-        }
+        gameWindow.Show();
     }
 }

@@ -1,12 +1,11 @@
 ﻿using CefSharp;
 
-namespace Sparebeat.Handler
+namespace Sparebeat.Handler;
+
+internal class AppSchemeHandlerFactory : ISchemeHandlerFactory
 {
-    class AppSchemeHandlerFactory : ISchemeHandlerFactory
+    public IResourceHandler Create(IBrowser browser, IFrame frame, string schemeName, IRequest request)
     {
-        public IResourceHandler Create(IBrowser browser, IFrame frame, string schemeName, IRequest request)
-        {
-            return new AppResourceHandler();
-        }
+        return new AppResourceHandler();
     }
 }

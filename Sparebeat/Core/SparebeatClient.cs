@@ -1,6 +1,5 @@
 ﻿using HtmlAgilityPack;
 using Sparebeat.Common;
-using Sparebeat.Json;
 using Sparebeat.Utilities;
 using System;
 using System.Collections.Generic;
@@ -12,183 +11,177 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace Sparebeat.Core
+namespace Sparebeat.Core;
+
+internal partial class SparebeatClient
 {
-    class SparebeatClient
+    [GeneratedRegex(@"\d+")]
+    private static partial Regex DigitsRegex();
+
+    private const string map = "map";
+    private const string music = "music";
+
+    public string CacheDirectory { get; set; }
+
+    private readonly HttpClient _client;
+    private readonly JsonSerializerOptions _serializerOptions;
+
+    public SparebeatClient(string cacheDirectory = null)
     {
-        private const string map = "map";
-        private const string music = "music";
+        CacheDirectory = cacheDirectory;
 
-        public string CacheDirectory { get; set; }
-
-        private readonly HttpClient _client;
-        private readonly JsonSerializerOptions _serializerOptions;
-
-        public SparebeatClient(string cacheDirectory = null)
+        _client = new HttpClient
         {
-            CacheDirectory = cacheDirectory;
+            BaseAddress = new Uri("https://sparebeat.com")
+        };
 
-            _client = new HttpClient
+        var userAgent = $"Sparebeat/{AssemblyUtility.GetVersion()} ({RuntimeInformation.OSDescription})";
+        _client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+
+        _serializerOptions = new JsonSerializerOptions
+        {
+            IgnoreNullValues = true,
+            DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+    }
+
+    public async Task<BeatmapInfo[]> GetBeatmapInfos()
+    {
+        var result = new List<BeatmapInfo>();
+
+        var htmlStream = await GetAsync<Stream>("/");
+        var document = new HtmlDocument();
+        document.Load(htmlStream);
+
+        var items = document.DocumentNode.SelectNodes("//li[contains(@class, 'music-list-item')]");
+
+        foreach (var item in items)
+        {
+            var id = item.GetAttributeValue("id", null);
+            var title = item.SelectSingleNode("div/div[contains(@class, 'music-list-item-title')]").InnerText.Normalize();
+            var artist = item.SelectSingleNode("div/div[contains(@class, 'music-list-item-artist')]").InnerText.Normalize();
+            var levelText = item.SelectSingleNode("div[contains(@class, 'music-list-item-sub')]").InnerText.Normalize();
+            var scoreText = item.SelectSingleNode("div[contains(@class, 'music-list-item-score')]").InnerText.Normalize();
+
+            var levels = DigitsRegex().Matches(levelText)
+                .Select(m => int.Parse(m.Value))
+                .ToArray();
+
+            result.Add(new BeatmapInfo
             {
-                BaseAddress = new Uri("https://sparebeat.com")
-            };
-
-            var userAgent = $"Sparebeat/{AssemblyUtility.GetVersion()} ({RuntimeInformation.OSDescription})";
-            _client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
-
-            _serializerOptions = new JsonSerializerOptions
-            {
-                IgnoreNullValues = true,
-                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                Converters =
+                Id = id,
+                Title = title,
+                Artist = artist,
+                Level = new BeatmapLevelSet
                 {
-                    new Int32Converter(),
-                    new INoteConverter()
-                }
-            };
+                    Easy = levels[0],
+                    Normal = levels[1],
+                    Hard = levels[2]
+                },
+                Score = int.Parse(scoreText)
+            });
         }
 
-        public async Task<BeatmapInfo[]> GetBeatmapInfos()
+        return result.ToArray();
+    }
+
+    public async Task<Beatmap> GetBeatmap(BeatmapInfo info)
+    {
+        Beatmap beatmap = null;
+        bool useCache = !string.IsNullOrEmpty(CacheDirectory);
+
+        if (useCache)
+            beatmap = GetBeatmapFromCache(info);
+
+        if (beatmap == null)
         {
-            var result = new List<BeatmapInfo>();
+            beatmap = await GetBeatmapFromHttp(info);
 
-            var htmlStream = await GetAsync<Stream>("/");
-            var document = new HtmlDocument();
-            document.Load(htmlStream);
-
-            var items = document.DocumentNode.SelectNodes("//li[contains(@class, 'music-list-item')]");
-
-            foreach (var item in items)
-            {
-                var id = item.GetAttributeValue("id", null);
-                var title = item.SelectSingleNode("div/div[contains(@class, 'music-list-item-title')]").InnerText.Normalize();
-                var artist = item.SelectSingleNode("div/div[contains(@class, 'music-list-item-artist')]").InnerText.Normalize();
-                var levelText = item.SelectSingleNode("div[contains(@class, 'music-list-item-sub')]").InnerText.Normalize();
-                var scoreText = item.SelectSingleNode("div[contains(@class, 'music-list-item-score')]").InnerText.Normalize();
-
-                var levels = Regex.Matches(levelText, @"\d+")
-                    .Cast<Match>()
-                    .Select(m => int.Parse(m.Value))
-                    .ToArray();
-
-                result.Add(new BeatmapInfo
-                {
-                    Id = id,
-                    Title = title,
-                    Artist= artist,
-                    Level = new BeatmapLevelSet
-                    {
-                        Easy = levels[0],
-                        Normal = levels[1],
-                        Hard = levels[2]
-                    },
-                    Score = int.Parse(scoreText)
-                });
-            }
-
-            return result.ToArray();
+            if (useCache && beatmap != null)
+                WriteBeatmapCache(info, beatmap);
         }
 
-        public async Task<Beatmap> GetBeatmap(BeatmapInfo info)
+        return beatmap;
+    }
+
+    private async Task<Beatmap> GetBeatmapFromHttp(BeatmapInfo info)
+    {
+        var mapTask = GetAsync<string>($"/play/{info.Id}/map");
+        var musicTask = GetAsync<byte[]>($"/play/{info.Id}/music");
+
+        await Task.WhenAll(mapTask, musicTask);
+
+        if (mapTask.Result == null || musicTask.Result == null)
+            return null;
+
+        return new Beatmap
         {
-            Beatmap beatmap = null;
-            bool useCache = !string.IsNullOrEmpty(CacheDirectory);
+            MapJson = mapTask.Result,
+            Music = musicTask.Result
+        };
+    }
 
-            if (useCache)
-                beatmap = GetBeatmapFromCache(info);
+    private Beatmap GetBeatmapFromCache(BeatmapInfo info)
+    {
+        var mapFile = Path.Combine(CacheDirectory, info.Id, map);
+        var musicFile = Path.Combine(CacheDirectory, info.Id, music);
 
-            if (beatmap == null)
-            {
-                beatmap = await GetBeatmapFromHttp(info);
+        if (!File.Exists(mapFile) || !File.Exists(musicFile))
+            return null;
 
-                if (useCache && beatmap != null)
-                    WriteBeatmapCache(beatmap);
-            }
+        string mapJson = File.ReadAllText(mapFile);
 
-            return beatmap;
-        }
-
-        private async Task<Beatmap> GetBeatmapFromHttp(BeatmapInfo info)
+        return new Beatmap
         {
-            var mapTask = GetAsync<BeatmapMetadata>($"/play/{info.Id}/map");
-            var musicTask = GetAsync<byte[]>($"/play/{info.Id}/music");
+            MapJson = mapJson,
+            Music = File.ReadAllBytes(musicFile)
+        };
+    }
 
-            await Task.WhenAll(mapTask, musicTask);
+    private void WriteBeatmapCache(BeatmapInfo info, Beatmap beatmap)
+    {
+        var directory = Path.Combine(CacheDirectory, info.Id);
+        var mapFile = Path.Combine(directory, map);
+        var musicFile = Path.Combine(directory, music);
 
-            if (mapTask.Result == null || musicTask.Result == null)
-                return null;
+        if (!Directory.Exists(directory))
+            Directory.CreateDirectory(directory);
 
-            return new Beatmap
-            {
-                Metadata = mapTask.Result,
-                Music = musicTask.Result
-            };
-        }
+        File.WriteAllText(mapFile, beatmap.MapJson);
+        File.WriteAllBytes(musicFile, beatmap.Music);
+    }
 
-        private Beatmap GetBeatmapFromCache(BeatmapInfo info)
+    private async Task<T> GetAsync<T>(string url)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var response = await _client.SendAsync(request);
+
+        if (!response.IsSuccessStatusCode)
+            return default;
+
+        object result;
+
+        switch (typeof(T))
         {
-            var mapFile = Path.Combine(CacheDirectory, info.Id, map);
-            var musicFile = Path.Combine(CacheDirectory, info.Id, music);
+            case var t when t == typeof(byte[]):
+                result = await response.Content.ReadAsByteArrayAsync();
+                break;
 
-            if (!File.Exists(mapFile) || !File.Exists(musicFile))
-                return null;
+            case var t when t == typeof(Stream):
+                result = new MemoryStream(await response.Content.ReadAsByteArrayAsync());
+                break;
 
-            string mapJson = File.ReadAllText(mapFile);
+            case var t when t == typeof(string):
+                result = await response.Content.ReadAsStringAsync();
+                break;
 
-            return new Beatmap
-            {
-                Metadata = JsonSerializer.Deserialize<BeatmapMetadata>(mapJson, _serializerOptions),
-                Music = File.ReadAllBytes(musicFile)
-            };
+            default:
+                string json = await response.Content.ReadAsStringAsync();
+                result = JsonSerializer.Deserialize<T>(json, _serializerOptions);
+                break;
         }
 
-        private void WriteBeatmapCache(Beatmap beatmap)
-        {
-            var directory = Path.Combine(CacheDirectory, beatmap.Metadata.Id);
-            var mapFile = Path.Combine(directory, map);
-            var musicFile = Path.Combine(directory, music);
-
-            if (!Directory.Exists(directory))
-                Directory.CreateDirectory(directory);
-
-            string mapJson = JsonSerializer.Serialize(beatmap.Metadata, _serializerOptions);
-
-            File.WriteAllText(mapFile, mapJson);
-            File.WriteAllBytes(musicFile, beatmap.Music);
-        }
-
-        private async Task<T> GetAsync<T>(string url)
-        {
-            var request = new HttpRequestMessage(HttpMethod.Get, url);
-            using var response = await _client.SendAsync(request);
-
-            if (!response.IsSuccessStatusCode)
-                return default;
-
-            object result;
-
-            switch (typeof(T))
-            {
-                case var t when t == typeof(byte[]):
-                    result = await response.Content.ReadAsByteArrayAsync();
-                    break;
-
-                case var t when t == typeof(Stream):
-                    result = new MemoryStream(await response.Content.ReadAsByteArrayAsync());
-                    break;
-
-                case var t when t == typeof(string):
-                    result = await response.Content.ReadAsStringAsync();
-                    break;
-
-                default:
-                    string json = await response.Content.ReadAsStringAsync();
-                    result = JsonSerializer.Deserialize<T>(json, _serializerOptions);
-                    break;
-            }
-
-            return (T)result;
-        }
+        return (T)result;
     }
 }

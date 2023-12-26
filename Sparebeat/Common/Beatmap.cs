@@ -1,9 +1,8 @@
-﻿namespace Sparebeat.Common
-{
-    class Beatmap
-    {
-        public BeatmapMetadata Metadata { get; set; }
+﻿namespace Sparebeat.Common;
 
-        public byte[] Music { get; set; }
-    }
+internal class Beatmap
+{
+    public string MapJson { get; set; }
+
+    public byte[] Music { get; set; }
 }

@@ -1,53 +1,73 @@
-﻿using CefSharp;
+﻿using System;
+using CefSharp;
 using CefSharp.WinForms;
 using Sparebeat.Handler;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 
-namespace Sparebeat
+namespace Sparebeat;
+
+public partial class App
 {
-    public partial class App : Application
+    public const string Name = "Sparebeat";
+
+    public App()
     {
-        public static readonly string Name = "Sparebeat";
+        var cefResourcePath = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "runtimes",
+            RuntimeInformation.RuntimeIdentifier,
+            "native"
+        );
 
-        public App()
+        var libcef = Path.Combine(cefResourcePath, "libcef.dll");
+        string message = null;
+
+        try
         {
-            string cefResourcePath = Path.Combine(Directory.GetCurrentDirectory(), @"resources\cefsharp");
-            string libcef = Path.Combine(cefResourcePath, "libcef.dll");
+            using var handle = new CefLibraryHandle(libcef);
 
-            if (new CefLibraryHandle(libcef).IsInvalid)
-            {
-                MessageBox.Show("CefSharp initialize failed", "Sparebeat", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            InitializeCefSharp(cefResourcePath);
+            if (handle.IsInvalid)
+                message = "CefSharp initialize failed";
+        }
+        catch (Exception e)
+        {
+            message = $"CefSharp initialize failed: {e.Message}";
         }
 
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void InitializeCefSharp(string resourceDirPath)
+        if (message != null)
         {
-            var settings = new CefSettings()
-            {
-                ResourcesDirPath = resourceDirPath,
-                BrowserSubprocessPath = Path.Combine(resourceDirPath, "CefSharp.BrowserSubprocess.exe"),
-                LocalesDirPath = Path.Combine(resourceDirPath, "locales"),
-                CachePath = AppEnvironment.Cache,
-                CefCommandLineArgs = { { "enable-media-stream", "1" } },
+            MessageBox.Show(message, "Sparebeat", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+            return;
+        }
+
+        InitializeCefSharp(cefResourcePath);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void InitializeCefSharp(string resourceDirPath)
+    {
+        var settings = new CefSettings()
+        {
+            ResourcesDirPath = resourceDirPath,
+            BrowserSubprocessPath = Path.Combine(resourceDirPath, "CefSharp.BrowserSubprocess.exe"),
+            LocalesDirPath = Path.Combine(resourceDirPath, "locales"),
+            CachePath = AppEnvironment.Cache,
+            CefCommandLineArgs = { { "enable-media-stream", "1" } },
 #if RELEASE
-                LogSeverity = LogSeverity.Disable
+            LogSeverity = LogSeverity.Disable
 #endif
-            };
-            
-            settings.RegisterScheme(new CefCustomScheme
-            {
-                SchemeName = "app",
-                SchemeHandlerFactory = new AppSchemeHandlerFactory()
-            });
+        };
 
-            Cef.EnableHighDPISupport();
-            Cef.Initialize(settings, false, browserProcessHandler: null);
-        }
+        settings.RegisterScheme(new CefCustomScheme
+        {
+            SchemeName = "app",
+            SchemeHandlerFactory = new AppSchemeHandlerFactory()
+        });
+
+        Cef.Initialize(settings, false, browserProcessHandler: null);
     }
 }

@@ -2,121 +2,120 @@
 using System.Collections.Generic;
 using System.Threading;
 
-namespace Sparebeat.Utilities
+namespace Sparebeat.Utilities;
+
+public static class ContextUtility
 {
-    public static class ContextUtility
+    private static readonly Dictionary<object, ContextSnapshot> _snapshots =
+        new Dictionary<object, ContextSnapshot>();
+
+    public static ContextSnapshot Snapshot(this object target)
     {
-        static readonly Dictionary<object, ContextSnapshot> _snapshots =
-            new Dictionary<object, ContextSnapshot>();
-
-        public static ContextSnapshot Snapshot(this object target)
+        if (!_snapshots.TryGetValue(target, out ContextSnapshot snapshot))
         {
-            if (!_snapshots.TryGetValue(target, out ContextSnapshot snapshot))
-            {
-                snapshot = new ContextSnapshot(target);
+            snapshot = new ContextSnapshot(target);
 
-                _snapshots[target] = snapshot;
-            }
-            else
-            {
-                snapshot.Shot();
-            }
-
-            return snapshot;
+            _snapshots[target] = snapshot;
+        }
+        else
+        {
+            snapshot.Shot();
         }
 
-        public class ContextSnapshot
+        return snapshot;
+    }
+
+    public class ContextSnapshot
+    {
+        public object Target { get; set; }
+
+        private SynchronizationContext _context;
+
+        public ContextSnapshot(object target)
         {
-            public object Target { get; set; }
+            Target = target;
+            Shot();
+        }
 
-            SynchronizationContext _context;
+        public void Shot()
+        {
+            _context = SynchronizationContext.Current ?? new SynchronizationContext();
+        }
 
-            public ContextSnapshot(object target)
+        public void Invoke(Action action)
+        {
+            _context.Send(InvokeImpl, action);
+        }
+
+        public void BeginInvoke(Action action)
+        {
+            _context.Post(InvokeImpl, action);
+        }
+
+        public void InvokeEvent(EventHandler eventHandler, object sender, EventArgs e)
+        {
+            Invoke(() => eventHandler?.Invoke(sender, e));
+        }
+
+        public void BeginInvokeEvent(EventHandler eventHandler, object sender, EventArgs e)
+        {
+            BeginInvoke(() => eventHandler?.Invoke(sender, e));
+        }
+
+        public void InvokeEvent<TEventArgs>(EventHandler<TEventArgs> eventHandler, object sender, TEventArgs e)
+        {
+            Invoke(() => eventHandler?.Invoke(sender, e));
+        }
+
+        public void BeginInvokeEvent<TEventArgs>(EventHandler<TEventArgs> eventHandler, object sender, TEventArgs e)
+        {
+            BeginInvoke(() => eventHandler?.Invoke(sender, e));
+        }
+
+        public TResult Invoke<TResult>(Func<TResult> function)
+        {
+            TResult result = default;
+
+            _context.Send(o =>
             {
-                Target = target;
-                Shot();
-            }
+                result = function.Invoke();
+            }, null);
 
-            public void Shot()
+            return result;
+        }
+
+        public void BeginInvoke<TResult>(Func<TResult> function, AsyncCallback callback, object @object)
+        {
+            _context.Post(o =>
             {
-                _context = SynchronizationContext.Current ?? new SynchronizationContext();
-            }
+                function.BeginInvoke(callback, @object);
+            }, null);
+        }
 
-            public void Invoke(Action action)
+        public TResult Invoke<T, TResult>(Func<T, TResult> function, T arg)
+        {
+            TResult result = default;
+
+            _context.Send(o =>
             {
-                _context.Send(InvokeImpl, action);
-            }
+                result = function.Invoke(arg);
+            }, null);
 
-            public void BeginInvoke(Action action)
+            return result;
+        }
+
+        public void BeginInvoke<T, TResult>(Func<T, TResult> function, T arg, AsyncCallback callback, object @object)
+        {
+            _context.Post(o =>
             {
-                _context.Post(InvokeImpl, action);
-            }
+                function.BeginInvoke(arg, callback, @object);
+            }, null);
+        }
 
-            public void InvokeEvent(EventHandler eventHandler, object sender, EventArgs e)
-            {
-                Invoke(() => eventHandler?.Invoke(sender, e));
-            }
-
-            public void BeginInvokeEvent(EventHandler eventHandler, object sender, EventArgs e)
-            {
-                BeginInvoke(() => eventHandler?.Invoke(sender, e));
-            }
-
-            public void InvokeEvent<TEventArgs>(EventHandler<TEventArgs> eventHandler, object sender, TEventArgs e)
-            {
-                Invoke(() => eventHandler?.Invoke(sender, e));
-            }
-
-            public void BeginInvokeEvent<TEventArgs>(EventHandler<TEventArgs> eventHandler, object sender, TEventArgs e)
-            {
-                BeginInvoke(() => eventHandler?.Invoke(sender, e));
-            }
-
-            public TResult Invoke<TResult>(Func<TResult> function)
-            {
-                TResult result = default;
-
-                _context.Send(o =>
-                {
-                    result = function.Invoke();
-                }, null);
-
-                return result;
-            }
-
-            public void BeginInvoke<TResult>(Func<TResult> function, AsyncCallback callback, object @object)
-            {
-                _context.Post(o =>
-                {
-                    function.BeginInvoke(callback, @object);
-                }, null);
-            }
-
-            public TResult Invoke<T, TResult>(Func<T, TResult> function, T arg)
-            {
-                TResult result = default;
-
-                _context.Send(o =>
-                {
-                    result = function.Invoke(arg);
-                }, null);
-
-                return result;
-            }
-
-            public void BeginInvoke<T, TResult>(Func<T, TResult> function, T arg, AsyncCallback callback, object @object)
-            {
-                _context.Post(o =>
-                {
-                    function.BeginInvoke(arg, callback, @object);
-                }, null);
-            }
-
-            private void InvokeImpl(object state)
-            {
-                if (state is Action action)
-                    action?.Invoke();
-            }
+        private void InvokeImpl(object state)
+        {
+            if (state is Action action)
+                action?.Invoke();
         }
     }
 }

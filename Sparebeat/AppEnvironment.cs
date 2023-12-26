@@ -1,54 +1,53 @@
 ﻿using System;
 using System.IO;
 
-namespace Sparebeat
+namespace Sparebeat;
+
+internal static class AppEnvironment
 {
-    static class AppEnvironment
-    {
-        const string songsDir = "Songs";
-        const string cacheDir = "Cache";
+    private const string songsDir = "Songs";
+    private const string cacheDir = "Cache";
 
 #if DEBUG
         private static readonly string _storage = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\Sparebeat(Development)";
 #else
-        private static readonly string _storage = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\Sparebeat";
+    private static readonly string _storage = $@"{Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)}\Sparebeat";
 #endif
 
-        public static string Storage
+    public static string Storage
+    {
+        get
         {
-            get
-            {
-                if (!Directory.Exists(_storage))
-                    Directory.CreateDirectory(_storage);
+            if (!Directory.Exists(_storage))
+                Directory.CreateDirectory(_storage);
 
-                return _storage;
-            }
+            return _storage;
         }
+    }
 
-        public static string Songs
+    public static string Songs
+    {
+        get
         {
-            get
-            {
-                var combine = Path.Combine(Storage, songsDir);
+            var combine = Path.Combine(Storage, songsDir);
 
-                if (!Directory.Exists(combine))
-                    Directory.CreateDirectory(combine);
+            if (!Directory.Exists(combine))
+                Directory.CreateDirectory(combine);
 
-                return combine;
-            }
+            return combine;
         }
+    }
 
-        public static string Cache
+    public static string Cache
+    {
+        get
         {
-            get
-            {
-                var combine = Path.Combine(Storage, cacheDir);
+            var combine = Path.Combine(Storage, cacheDir);
 
-                if (!Directory.Exists(combine))
-                    Directory.CreateDirectory(combine);
+            if (!Directory.Exists(combine))
+                Directory.CreateDirectory(combine);
 
-                return combine;
-            }
+            return combine;
         }
     }
 }
