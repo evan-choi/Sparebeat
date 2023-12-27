@@ -1,0 +1,30 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<body>
+<script>
+    window.onmessage = (e) => {
+        const payload = JSON.parse(e.data);
+
+        if (payload.key === 'eval') {
+            let message = {
+                key: 'eval#ret',
+                id: payload.id,
+            };
+
+            try {
+                message.result = eval(payload.script);
+            } catch (e) {
+                message.error = {
+                    name: e.name,
+                    message: e.message,
+                    stack: e.stack
+                }
+            }
+
+            parent.postMessage(JSON.stringify(message), '*');
+        }
+    }
+</script>
+</body>
+</html>

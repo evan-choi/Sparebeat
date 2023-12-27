@@ -11,8 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CefSharp.Common" Version="120.1.110" />
-    <PackageReference Include="CefSharp.WinForms" Version="120.1.110" />
+    <PackageReference Include="CefSharp.OffScreen.NETCore" Version="120.1.110" />
     <PackageReference Include="CefSharp.WinForms.NETCore" Version="120.1.110" />
     <PackageReference Include="HtmlAgilityPack" Version="1.11.57" />
   </ItemGroup>
@@ -56,6 +55,10 @@
 
   <ItemGroup>
     <Folder Include="Resources\Styles\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\App\bridge.html" />
   </ItemGroup>
 
 </Project>

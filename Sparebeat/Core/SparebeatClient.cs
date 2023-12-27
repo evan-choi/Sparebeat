@@ -62,7 +62,6 @@ internal partial class SparebeatClient
             var title = item.SelectSingleNode("div/div[contains(@class, 'music-list-item-title')]").InnerText.Normalize();
             var artist = item.SelectSingleNode("div/div[contains(@class, 'music-list-item-artist')]").InnerText.Normalize();
             var levelText = item.SelectSingleNode("div[contains(@class, 'music-list-item-sub')]").InnerText.Normalize();
-            var scoreText = item.SelectSingleNode("div[contains(@class, 'music-list-item-score')]").InnerText.Normalize();
 
             var levels = DigitsRegex().Matches(levelText)
                 .Select(m => int.Parse(m.Value))
@@ -78,8 +77,7 @@ internal partial class SparebeatClient
                     Easy = levels[0],
                     Normal = levels[1],
                     Hard = levels[2]
-                },
-                Score = int.Parse(scoreText)
+                }
             });
         }
 

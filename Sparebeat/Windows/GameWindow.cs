@@ -1,18 +1,15 @@
-﻿using CefSharp;
-using Sparebeat.Common;
+﻿using Sparebeat.Common;
 using Sparebeat.Core;
 using System;
-using System.ComponentModel;
+using System.Threading;
 using System.Windows.Forms;
-using CefSharp.Internals;
-using Sparebeat.Handler;
 
 namespace Sparebeat.Windows;
 
 internal partial class GameWindow
 {
-    private Beatmap _beatmap;
-    private SparebeatBrowser _sparebeat;
+    private readonly Beatmap _beatmap;
+    private readonly SparebeatBrowser _sparebeat;
 
     public GameWindow(BeatmapInfo info, Beatmap beatmap)
     {
@@ -35,8 +32,7 @@ internal partial class GameWindow
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
-        _browser.Hide();
-        base.OnFormClosing(e);
+        _browser.BrowserCore.CloseBrowser(false);
     }
 
     protected override void Dispose(bool disposing)

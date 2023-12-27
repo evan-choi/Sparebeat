@@ -1,11 +1,21 @@
-﻿using CefSharp;
+﻿using System.IO;
+using System.Net;
+using CefSharp;
 
 namespace Sparebeat.Handler;
 
-internal class AppSchemeHandlerFactory : ISchemeHandlerFactory
+public sealed class AppSchemeHandlerFactory : ISchemeHandlerFactory
 {
     public IResourceHandler Create(IBrowser browser, IFrame frame, string schemeName, IRequest request)
     {
-        return new AppResourceHandler();
+        if (AppResources.TryResolvePath(request.Url, out var resourcePath))
+        {
+            var mimeType = ResourceHandler.GetMimeType(Path.GetExtension(resourcePath));
+            var resourceStream = AppResources.GetStream(resourcePath);
+
+            return ResourceHandler.FromStream(resourceStream, mimeType, true);
+        }
+
+        return ResourceHandler.ForErrorMessage("Not found", HttpStatusCode.NotFound);
     }
 }

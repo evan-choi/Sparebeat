@@ -1,11 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 using CefSharp;
 using CefSharp.WinForms;
-using Sparebeat.Handler;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows;
+using Sparebeat.Core;
+using Sparebeat.Handler;
 
 namespace Sparebeat;
 
@@ -15,42 +18,51 @@ public partial class App
 
     public App()
     {
-        var cefResourcePath = Path.Combine(
+        try
+        {
+            var cefDif = GetCefDirectory();
+
+            InitializeCefSharp(cefDif);
+        }
+        catch (Exception e)
+        {
+            MessageBox.Show(e.Message, "Sparebeat", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown();
+        }
+    }
+
+    private static string GetCefDirectory()
+    {
+        return CefDirectoryCandidates()
+            .Where(Directory.Exists)
+            .FirstOrDefault(x =>
+            {
+                var libcef = Path.Combine(x, "libcef.dll");
+
+                if (!File.Exists(libcef))
+                    return false;
+
+                using var handle = new CefLibraryHandle(libcef);
+                return !handle.IsInvalid;
+            }) ?? throw new DllNotFoundException("CEF initialize failed");
+    }
+
+    private static IEnumerable<string> CefDirectoryCandidates()
+    {
+        yield return Path.Combine(
             Directory.GetCurrentDirectory(),
             "runtimes",
             RuntimeInformation.RuntimeIdentifier,
             "native"
         );
 
-        var libcef = Path.Combine(cefResourcePath, "libcef.dll");
-        string message = null;
-
-        try
-        {
-            using var handle = new CefLibraryHandle(libcef);
-
-            if (handle.IsInvalid)
-                message = "CefSharp initialize failed";
-        }
-        catch (Exception e)
-        {
-            message = $"CefSharp initialize failed: {e.Message}";
-        }
-
-        if (message != null)
-        {
-            MessageBox.Show(message, "Sparebeat", MessageBoxButton.OK, MessageBoxImage.Error);
-            Shutdown();
-            return;
-        }
-
-        InitializeCefSharp(cefResourcePath);
+        yield return Directory.GetCurrentDirectory();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void InitializeCefSharp(string resourceDirPath)
     {
-        var settings = new CefSettings()
+        var settings = new CefSettings
         {
             ResourcesDirPath = resourceDirPath,
             BrowserSubprocessPath = Path.Combine(resourceDirPath, "CefSharp.BrowserSubprocess.exe"),
@@ -67,6 +79,8 @@ public partial class App
             SchemeName = "app",
             SchemeHandlerFactory = new AppSchemeHandlerFactory()
         });
+
+        CefSharpSettings.ShutdownOnExit = true;
 
         Cef.Initialize(settings, false, browserProcessHandler: null);
     }

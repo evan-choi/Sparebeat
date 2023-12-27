@@ -10,8 +10,8 @@ internal class SparebeatBrowser
 {
     public event EventHandler Loadded;
 
-    private IWebBrowser _browser;
-    private ContextUtility.ContextSnapshot _snapshot;
+    private readonly IWebBrowser _browser;
+    private readonly ContextUtility.ContextSnapshot _snapshot;
 
     public bool IsLoaded => !_browser.IsLoading;
 
@@ -21,6 +21,8 @@ internal class SparebeatBrowser
 
         _browser = webBrowser;
         _browser.LoadingStateChanged += LoadingStateChanged;
+
+        _browser.Load("app://main.html");
     }
 
     private void LoadingStateChanged(object sender, LoadingStateChangedEventArgs e)
@@ -29,7 +31,7 @@ internal class SparebeatBrowser
             return;
 
 #if DEBUG
-            _browser.ShowDevTools();
+        _browser.ShowDevTools();
 #endif
 
         _browser.LoadingStateChanged -= LoadingStateChanged;

@@ -28,7 +28,7 @@ namespace Sparebeat.Windows
             _logo.Size = new Size(128, 128);
             _logo.Location = new Point((ClientSize.Width - _logo.Size.Width) / 2, 200);
 
-            _browser = new ChromiumWebBrowser("app://main.html");
+            _browser = new ChromiumWebBrowser();
             _browser.Size = ClientSize;
             _browser.Left = ClientSize.Width;
             _browser.Dock = DockStyle.None;
